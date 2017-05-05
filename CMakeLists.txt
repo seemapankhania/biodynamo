@@ -25,7 +25,7 @@ if (test)
   # must be before include(${ROOT_USE_FILE}) otherwise test compile fails
   find_package(Threads REQUIRED)
 endif()
-#find_package(ROOT REQUIRED COMPONENTS Eve Geom Gui)
+find_package(ROOT REQUIRED COMPONENTS Eve Geom Gui)
 
 set(BUILD_SUPPORT_DIR "${CMAKE_SOURCE_DIR}/housekeeping")
 find_package(ClangTools)
@@ -112,7 +112,7 @@ endif()
 
 #--------------------- build shared library libbiodynamo ----------------
 # add the headers into the project
-#include(${ROOT_USE_FILE})
+include(${ROOT_USE_FILE})
 include_directories("${CMAKE_SOURCE_DIR}/src")
 include_directories("${CMAKE_SOURCE_DIR}/third_party")
 # include_directories("${Vc_INCLUDE_DIR}")
