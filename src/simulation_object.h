@@ -15,6 +15,9 @@ struct SimulationObject {
 
   virtual ~SimulationObject() {}
 
+  /// Returns the id of this object
+  size_t id() const { return idx_; }
+
   /// Returns the number of elements in this object
   size_t size() const { return size_; }
 
