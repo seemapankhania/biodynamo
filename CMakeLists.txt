@@ -234,3 +234,8 @@ target_link_libraries(${SIMULATION_TARGET} biodynamo)
 set(SIMULATION_TARGET cell_division_module)
 add_executable(${SIMULATION_TARGET} ${CMAKE_SOURCE_DIR}/demo/cell_division_module.cc)
 target_link_libraries(${SIMULATION_TARGET} biodynamo)
+
+# --------------------- build cancergrowth_sim executable ------------------
+set(SIMULATION_TARGET cancergrowth_sim)
+add_executable(${SIMULATION_TARGET} ${CMAKE_SOURCE_DIR}/demo/cancergrowth_sim.cc)
+target_link_libraries(${SIMULATION_TARGET} biodynamo)
