@@ -11,53 +11,66 @@
 
 namespace bdm {
 
-class Vector3DInterface {
- public:
-  Vector3DInterface() { coord_[0] = coord_[1] = coord_[2] = 0.0; }
-  Vector3DInterface(double x, double y, double z) {
-    coord_[0] = x;
-    coord_[1] = y;
-    coord_[2] = z;
-  }
-  Vector3DInterface(const Vector3DInterface& v) {
-    coord_[0] = v.coord_[0];
-    coord_[1] = v.coord_[1];
-    coord_[2] = v.coord_[2];
-  }
-  ~Vector3DInterface() {}
-
-  double coord_[3];
-};
-
-class ContinuousInterfaceData {
- public:
-  explicit ContinuousInterfaceData(int num_cell_types = 1) {
-    const unsigned int num_vertices = 8;
-    oxygen_level_.assign(num_vertices, 0.0);
-    oxygen_level_gradient_.assign(num_vertices, Vector3DInterface());
-    normoxic_cells_.resize(num_vertices);
-    hypoxic_cells_.resize(num_vertices);
-    for (unsigned int n = 0; n < num_vertices; n++) {
-      normoxic_cells_[n].assign(num_cell_types, 0);
-      hypoxic_cells_[n].assign(num_cell_types, 0);
+  class Vector3DInterface {
+  public:
+    Vector3DInterface() { coord_[0] = coord_[1] = coord_[2] = 0.0; }
+    Vector3DInterface(double x, double y, double z) {
+      coord_[0] = x;
+      coord_[1] = y;
+      coord_[2] = z;
     }
-  }
-  ~ContinuousInterfaceData() {}
+    Vector3DInterface(const Vector3DInterface& v) {
+      coord_[0] = v.coord_[0];
+      coord_[1] = v.coord_[1];
+      coord_[2] = v.coord_[2];
+    }
+    ~Vector3DInterface() {}
 
-  std::vector<double> oxygen_level_;
-  std::vector<Vector3DInterface> oxygen_level_gradient_;
-  std::vector<std::vector<unsigned int>> normoxic_cells_;
-  std::vector<std::vector<unsigned int>> hypoxic_cells_;
-};
+    double coord_[3];
+  };
 
-class DiscontinuousInterfaceData {
- public:
-  DiscontinuousInterfaceData() {}
-  ~DiscontinuousInterfaceData() {}
+  class ContinuousInterfaceData {
+  public:
+    explicit ContinuousInterfaceData(int num_cell_types = 1) {
+      const unsigned int num_vertices = 8;
+      oxygen_level_.assign(num_vertices, 0.0);
+      oxygen_level_gradient_.assign(num_vertices, Vector3DInterface());
+      normoxic_cells_.resize(num_vertices);
+      hypoxic_cells_.resize(num_vertices);
+      for (unsigned int n = 0; n < num_vertices; n++) {
+        normoxic_cells_[n].assign(num_cell_types, 0);
+        hypoxic_cells_[n].assign(num_cell_types, 0);
+      }
+    }
+    ~ContinuousInterfaceData() {}
 
-  double ecm_density_;
-  Vector3DInterface ecm_density_gradient_;
-};
+    std::vector<double> oxygen_level_;
+    std::vector<Vector3DInterface> oxygen_level_gradient_;
+    std::vector<std::vector<unsigned int>> normoxic_cells_;
+    std::vector<std::vector<unsigned int>> hypoxic_cells_;
+  };
+
+  class DiscontinuousInterfaceData {
+  public:
+
+    double    ecm_density;
+    Vector3DInterface ecm_density_gradient;
+    std::vector< double > normoxic_cells_mass;
+    std::vector< double > hypoxic_cells_mass;
+    std::vector< unsigned int > normoxic_cells_population;
+    std::vector< unsigned int > hypoxic_cells_population;
+
+    DiscontinuousInterfaceData(int n_cell_types = 1) {
+      normoxic_cells_mass.assign(n_cell_types, 0.0);
+      hypoxic_cells_mass.assign(n_cell_types, 0.0);
+      normoxic_cells_population.assign(n_cell_types, 0);
+      hypoxic_cells_population.assign(n_cell_types, 0);
+    }
+    ~DiscontinuousInterfaceData() {}
+
+    double ecm_density_;
+    Vector3DInterface ecm_density_gradient_;
+  };
 
 /// Enumeration of the 8 vertices of the BDMCubicDomain as in the following
 /// schematic. Thus the
@@ -78,26 +91,26 @@ class DiscontinuousInterfaceData {
 ///      |.       |/
 ///      o--------o
 ///      0        1
-class BDMCubicDomain {
- public:
-  BDMCubicDomain() : is_init_(false) {}
-  ~BDMCubicDomain() {}
+  class BDMCubicDomain {
+  public:
+    BDMCubicDomain() : is_init_(false) {}
+    ~BDMCubicDomain() {}
 
-  ContinuousInterfaceData cont_fd_;
-  DiscontinuousInterfaceData disc_fd_;
+    ContinuousInterfaceData cont_fd_;
+    DiscontinuousInterfaceData disc_fd_;
 
-  void Init(size_t ncell, std::vector<Vector3DInterface> v) {
-    cells_ = std::vector<bdm::Cell<>>(ncell);
-    if (v.size() != 8) {
-      throw;
-    } else {
-      vertex_ = v;
+    void Init(size_t ncell, std::vector<Vector3DInterface> v) {
+      cells_ = std::vector<bdm::Cell<>>(ncell);
+      if (v.size() != 8) {
+        throw;
+      } else {
+        vertex_ = v;
+      }
+      is_init_ = true;
     }
-    is_init_ = true;
-  }
   inline bool is_init() const { return is_init_; }  // NOLINT
 
- private:
+private:
   bool is_init_;
   std::vector<bdm::Cell<>> cells_;
   std::vector<Vector3DInterface> vertex_;
