@@ -201,3 +201,9 @@ bdm_add_executable(diffusion_module
                    SOURCES demo/diffusion_module.cc
                    HEADERS demo/diffusion_module.h
                    LIBRARIES biodynamo)
+
+# --------------------- build cancergrowth_sim executable ----------------------
+bdm_add_executable(cancergrowth_sim
+                   SOURCES demo/cancergrowth_sim.cc
+                   HEADERS demo/cancergrowth_sim.h
+                   LIBRARIES biodynamo)
