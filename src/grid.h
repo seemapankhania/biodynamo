@@ -10,6 +10,7 @@
 #include <cmath>
 #include <iostream>
 #include <limits>
+#include <TError.h>
 #include <vector>
 
 #include "constant.h"
@@ -321,17 +322,15 @@ class Grid {
     if (min_gd < threshold_dimensions_[0] && initialized_) {
       threshold_dimensions_[0] = min_gd;
       has_grown_ = true;
-      std::cout << "Your simulation objects are getting near the edge of the "
+      Info("Grid", "Your simulation objects are getting near the edge of the "
                    "simulation space. Be aware of boundary conditions that may "
-                   "come into play!"
-                << std::endl;
+                   "come into play!");
     }
     if (max_gd > threshold_dimensions_[1] && initialized_) {
       has_grown_ = true;
-      std::cout << "Your simulation objects are getting near the edge of the "
+      Info("Grid", "Your simulation objects are getting near the edge of the "
                    "simulation space. Be aware of boundary conditions that may "
-                   "come into play!"
-                << std::endl;
+                   "come into play!");
       threshold_dimensions_[1] = max_gd;
     }
   }
