@@ -26,8 +26,6 @@ TEST(DISABLED_NeuriteElementBehaviour, StraightxCylinderGrowthRetract) {
   Param::Reset();
   Rm()->Clear();
 
-  Param::live_visualization_ = true;
-
   auto neuron = Rm()->New<NeuronSoma>();
   neuron.SetPosition({0, 0, 0});
   neuron.SetMass(1);
@@ -98,8 +96,8 @@ TEST(DISABLED_NeuriteElementBehaviour, BranchingGrowth) {
   auto ne = neuron.ExtendNewNeurite({0, 0, 1});
   ne->SetDiameter(1);
 
-  auto& grid = Grid<>::GetInstance();
-  grid.Initialize();
+  // auto& grid = Grid<>::GetInstance();
+  // grid.Initialize();
   Scheduler<> scheduler;
 
   std::array<double, 3> previous_direction;

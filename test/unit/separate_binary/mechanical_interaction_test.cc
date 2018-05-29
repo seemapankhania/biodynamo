@@ -159,8 +159,6 @@ TEST(MechanicalInteraction, DiagonalxyzCylinderGrowth) {
   Param::Reset();
   Rm()->Clear();
 
-  // Param::live_visualization_ = true;
-
   auto neuron = Rm()->New<NeuronSoma>();
   neuron.SetPosition({0, 0, 0});
   neuron.SetMass(1);
@@ -184,9 +182,6 @@ TEST(MechanicalInteraction, DiagonalxyzCylinderGrowth) {
 
     ne_axis = ne->GetSpringAxis();
 
-    std::cout << "xz spring axis: " << ne_axis[0] << " ; " << ne_axis[2]
-              << std::endl;
-
     EXPECT_NEAR(ne_axis[0], ne_axis[1], abs_error<double>::value);
     EXPECT_NEAR(ne_axis[0], ne_axis[2], abs_error<double>::value);
   }
@@ -196,15 +191,11 @@ TEST(MechanicalInteraction, DiagonalSpecialDirectionCylinderGrowth) {
   Param::Reset();
   Rm()->Clear();
 
-  // Param::live_visualization_ = true;
-
   auto neuron = Rm()->New<NeuronSoma>();
   neuron.SetPosition({0, 0, 0});
   neuron.SetMass(1);
   neuron.SetDiameter(10);
 
-  //    auto ne = neuron.ExtendNewNeurite(2.0, DegreesToRadians(36.6992),
-  //    DegreesToRadians(63.4349));
   auto ne = neuron.ExtendNewNeurite({1, 1, 1});
 
   Scheduler<> scheduler;
@@ -215,7 +206,6 @@ TEST(MechanicalInteraction, DiagonalSpecialDirectionCylinderGrowth) {
   EXPECT_NEAR(ne_axis[1], 0.57735026918962584, abs_error<double>::value);
   EXPECT_NEAR(ne_axis[2], 0.57735026918962584, abs_error<double>::value);
 
-  //    std::array<double, 3> direction = { 1.5, 2.3, 3.8 };
   std::array<double, 3> direction = {2, 1, 1};
 
   for (int i = 0; i < 98; i++) {
@@ -300,7 +290,8 @@ TEST(DISABLED_MechanicalInteraction, NotStraightCylinderGrowthObstacle) {
   }
 
   ne_axis = ne->GetSpringAxis();
-  EXPECT_NEAR(ne_axis[0], 0, abs_error<double>::value);
+  ASSERT_TRUE(ne->GetMassLocation()[0]>5);
+  ASSERT_TRUE(ne_axis[0]<0.1);
   EXPECT_NEAR(ne_axis[1], 0, abs_error<double>::value);
 }
 
@@ -352,6 +343,7 @@ TEST(MechanicalInteraction, DoubleStraightCylinderGrowth) {
   }
 }
 
+// TODO(jean) Fix test
 TEST(MechanicalInteraction, BifurcationCylinderGrowth) {
   Param::Reset();
   Rm()->Clear();
@@ -384,7 +376,6 @@ TEST(MechanicalInteraction, BifurcationCylinderGrowth) {
     scheduler.Simulate(1);
   }
 
-  //    std::cout << "---- bifurcation ----" << std::endl;
   //    auto&& ne2=ne->Bifurcate();
   auto branches = ne->Bifurcate();
   auto branch_l = branches[0];
@@ -411,6 +402,7 @@ TEST(MechanicalInteraction, BifurcationCylinderGrowth) {
   }
 }
 
+// TODO(jean) Fix test
 TEST(MechanicalInteraction, BranchCylinderGrowth) {
   Param::Reset();
   Rm()->Clear();
@@ -442,7 +434,6 @@ TEST(MechanicalInteraction, BranchCylinderGrowth) {
     scheduler.Simulate(1);
   }
 
-  //    std::cout << "---- branch cylinder ----" << std::endl;
   //    dynamic_cast<Neurite>(ne->Branch(0.5, direction2));
   auto ne2 = ne->Branch(0.5, direction2);
 
