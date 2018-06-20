@@ -32,14 +32,8 @@ BDM_OS=travis-osx
 . $BDM_PROJECT_DIR/util/installation/common/util.sh
 
 function InstallPackages {
-  BREW_INSTALL_PACKAGES="doxygen valgrind cloc python@2 llvm"
-  BREW_UPGRADE_PACKAGES="cmake"
-
-  if brew ls --versions python3 > /dev/null; then
-    BREW_UPGRADE_PACKAGES=$BREW_UPGRADE_PACKAGES" python3"
-  else
-    BREW_INSTALL_PACKAGES=$BREW_INSTALL_PACKAGES" python3"
-  fi
+  BREW_INSTALL_PACKAGES="doxygen valgrind cloc llvm python@2"
+  BREW_UPGRADE_PACKAGES="cmake python"
 
   EchoInfo "This script uses brew to install:"
   for p in $BREW_INSTALL_PACKAGES; do
@@ -74,6 +68,7 @@ function InstallPackages {
 
   if [ $INSTALL ]; then
     brew update >& /dev/null
+    brew install python || true # if python is not already installed we need to install it before upgrading it
     brew upgrade $BREW_UPGRADE_PACKAGES || true
     brew install $BREW_INSTALL_PACKAGES || true
     #  for mkdocs
