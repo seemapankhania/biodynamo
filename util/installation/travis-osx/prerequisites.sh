@@ -33,7 +33,13 @@ BDM_OS=travis-osx
 
 function InstallPackages {
   BREW_INSTALL_PACKAGES="doxygen valgrind cloc python@2 llvm"
-  BREW_UPGRADE_PACKAGES="cmake python3"
+  BREW_UPGRADE_PACKAGES="cmake"
+
+  if brew ls --versions python3 > /dev/null; then
+    BREW_UPGRADE_PACKAGES=$BREW_UPGRADE_PACKAGES" python3"
+  else
+    BREW_INSTALL_PACKAGES=$BREW_INSTALL_PACKAGES" python3"
+  fi
 
   EchoInfo "This script uses brew to install:"
   for p in $BREW_INSTALL_PACKAGES; do
