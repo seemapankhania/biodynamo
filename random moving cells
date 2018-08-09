@@ -1,0 +1,432 @@
+# Create randomly moving, coloured cells tutorial
+Written by Seema Pankhania
+## Creating randomly moving cells
+In this tutorial we will be making a group of 5 randomly arranged cells that will randomly moved when viewed on paraview using Biodynamo. 
+
+Create a new biodynamo file, we will be editing the code on the .h file
+
+Adding this header allows the file of biodynamo be included in the code:  
+
+``` C++
+#include "biodynamo.h"
+namespace bdm {
+```
+
+The code must look inside the base biology module to be able to preform the functions of the growth module. So under the namespace std; write:
+``` C++
+struct GrowthModule : public BaseBiologyModule {
+GrowthModule() : BaseBiologyModule(gAllBmEvents) {}
+```
+
+The template stimulation allows the code to be executed at each stimulation step, so that the cells would follow the pattern and be able to move, write: 
+``` C++
+template <typename T, typename TSimulation = Simulation<>>
+  void Run(T* cell) {
+    auto* random = TSimulation::GetActive()->GetRandom();
+```
+
+To make the cells move, an array is made which determines how much the cell will move in the particular direction which then the cell can be made to move in this way. Decreasing or increasing the number will determine the distance moved. 
+``` C++
+array<double, 3> cell_movements{random->Uniform(-2, 2), random->Uniform(-2, 2), random->Uniform(-2, 2)}; // create an array of 3 random numbers between -2 and 2
+cell->UpdatePosition(cell_movements); // update the cell mass location, ie move the cell
+};
+```
+
+The biology module and the MyCell object which has been created needs to be added to the compile time parameter, so BioDynaMo can use the new BiologyModule.  
+``` C++
+// Define compile time parameter
+template <typename Backend>
+struct CompileTimeParam : public DefaultCompileTimeParam<Backend> {
+  using BiologyModules = Variant<GrowthModule>;  // add GrowthModule
+  using AtomicTypes = VariadicTypedef<MyCell>;   // use MyCell object
+};
+```
+
+There are 5 cells being made in this simulation, this can be altered to the desired number of cells 
+``` C++
+inline int Simulate(int argc, const char** argv) {
+  Simulation<> simulation(argc, argv);
+  auto* rm = simulation.GetResourceManager();
+  auto* param = simulation.GetParam();
+  auto* random = simulation.GetRandom();
+
+
+size_t nb_of_cells = 2400;  // number of cells in the simulation
+  double x_coord, y_coord, z_coord;
+```
+
+An area is made the cells to be contained in which is a cube of 100*100*100, this helps to ensure a confined space for how much the cells will move
+``` C++
+param->bound_space_ = true;
+  param->min_bound_ = 0;
+  param->max_bound_ = 100;  // cube of 100*100*100
+  param->run_mechanical_interactions_ = true;
+
+  // create a structure to contain cells
+  auto* cells = rm->template Get<MyCell>();
+  // allocate the correct number of cell in our cells structure before
+  // cell creation
+  cells->reserve(nb_of_cells);
+``` 
+
+For each cell, its x, y and z coordinate are randomly determined, within the range of the areas defined above. 
+``` C++
+  for (size_t i = 0; i < nb_of_cells; ++i) {
+    // our modelling will be a cell cube of 100*100*100
+    // random double between 0 and 100
+    x_coord = random->Uniform(param->min_bound_, param->max_bound_);
+    y_coord = random->Uniform(param->min_bound_, param->max_bound_);
+    z_coord = random->Uniform(param->min_bound_, param->max_bound_);
+```
+
+The cells which are to be created can be set with parameters, such as the cell diameter. Also this allows the cell to include growth model which was written in the code previous. 
+``` C++
+    // creating the cell at position x, y, z
+    Cell cell({x_coord, y_coord, z_coord});
+    // set cell parameters
+    cell.SetDiameter(7);
+    cell.AddBiologyModule(GrowthModule());
+	
+    cells->push_back(cell);  // put the created cell in our cells structure
+  }
+  cells->Commit();
+```
+
+The number of times the simulation is run will determine how much the cells move. 
+``` C++
+  // Run simulation for one timestep
+  simulation.GetScheduler()->Simulate(3000);
+
+
+  std::cout << "Simulation completed successfully!" << std::endl;
+  return 0;
+}
+}  // namespace bdm
+
+
+#endif  // COMPILE_TEST_H_
+```
+
+Run this on the terminal using 
+
+'biodynamo run'
+
+Correct any errors that may arise, check that all the cases are correct as well as the indentations. Check with the code at the bottom. 
+
+To view the cells, open paraview the terminal using
+
+'paraview &'
+
+Then follow the instructions on https://biodynamo.github.io/user/jean_tuto/#paraview
+using the export visualization 
+
+You would notice that the cells are not randomly moving, some of the cells tend to clump together. This is fixed by adding this before where the number of cells are declared
+``` C++
+#pragma omp parallel
+  simulation.GetRandom()->SetSeed(omp_get_thread_num());
+```
+
+Now if you play the simulation with paraview, you will notice that the cells are randomly moving without the clumping. This is because each thread has its own random number generator and each cell is processed by different. So each cell could move in the exact same direction. The lines which we have added initialize the random number generator of each thread to a different value. 
+![seemapankhania/images/videoimage1.png](https://youtu.be/ta5Kup3TYB0)
+
+Code for the .h file :
+``` C++
+#ifndef COMPILE_TEST_H_
+#define COMPILE_TEST_H_
+
+
+#include "biodynamo.h"
+namespace bdm {
+
+
+using namespace std;
+
+
+struct GrowthModule : public BaseBiologyModule {
+  GrowthModule() : BaseBiologyModule(gAllBmEvents) {}
+
+
+  template <typename T, typename TSimulation = Simulation<>>
+  void Run(T* cell) {
+    auto* random = TSimulation::GetActive()->GetRandom();
+
+
+          array<double, 3> cell_movements{random->Uniform(-2, 2), random->Uniform(-2, 2), random->Uniform(-2, 2)}; // create an array of 3 random numbers between -2 and 2
+          cell->UpdatePosition(cell_movements); // update the cell mass location, ie move the cell
+      } // end Run
+};
+
+
+// Define compile time parameter
+template <typename Backend>
+struct CompileTimeParam : public DefaultCompileTimeParam<Backend> {
+  using BiologyModules = Variant<GrowthModule>;  // add GrowthModule
+  // using AtomicTypes = VariadicTypedef<MyCell>;   // use MyCell object
+};
+
+
+inline int Simulate(int argc, const char** argv) {
+  Simulation<> simulation(argc, argv);
+  auto* rm = simulation.GetResourceManager();
+  auto* param = simulation.GetParam();
+  auto* random = simulation.GetRandom();
+
+#pragma omp parallel
+  simulation.GetRandom()->SetSeed(omp_get_thread_num());
+
+
+  size_t nb_of_cells = 10;  // number of cells in the simulation
+  double x_coord, y_coord, z_coord;
+
+
+  param->bound_space_ = true;
+  param->min_bound_ = 0;
+  param->max_bound_ = 100;  // cube of 100*100*100
+
+
+  // create a structure to contain cells
+  auto* cells = rm->template Get<Cell>();
+  // allocate the correct number of cell in our cells structure before
+  // cell creation
+  cells->reserve(nb_of_cells);
+
+
+  for (size_t i = 0; i < nb_of_cells; ++i) {
+    // our modelling will be a cell cube of 100*100*100
+    // random double between 0 and 100
+    x_coord = random->Uniform(param->min_bound_, param->max_bound_);
+    y_coord = random->Uniform(param->min_bound_, param->max_bound_);
+    z_coord = random->Uniform(param->min_bound_, param->max_bound_);
+
+
+    // creating the cell at position x, y, z
+    Cell cell({x_coord, y_coord, z_coord});
+    // set cell parameters
+    cell.SetDiameter(7);
+    cell.AddBiologyModule(GrowthModule());
+
+
+    cells->push_back(cell);  // put the created cell in our cells structure
+  }
+  cells->Commit();
+
+
+  // Run simulation for one timestep
+  simulation.GetScheduler()->Simulate(3000);
+
+
+  std::cout << "Simulation completed successfully!" << std::endl;
+  return 0;
+}
+}  // namespace bdm
+
+
+#endif  // COMPILE_TEST_H_
+```
+
+Code for the .cc file :
+``` C++
+#include "compile_test.h"
+
+int main(int argc, const char** argv) { return bdm::Simulate(argc, argv); }
+```
+
+Code for the bdm.toml file :
+``` C++
+[simulation]
+run_mechanical_interactions = true
+bound_space = true
+
+
+[visualization]
+live = false
+export = true
+export_interval = 2
+
+
+    [[visualize_sim_object]]
+        name = "Cell"
+```
+
+##Update Installation
+If there are errors which you are unable to solve, try updating biodynamo before taking further action
+
+The following commands update your BioDynaMo installation:
+'cd path/to/biodynamo
+# make sure you are on the master branch
+git checkout master
+# get latest changes
+git pull origin master
+./install.sh'
+
+##Adding colour
+To colour the cells first after name space using a class, objects are defined which is called MyCell. A public member allows the code to be accessed outside of the class. Here it is defined what MyCellExt is allowing it contain the code to colour the cell. 
+``` C++
+  // Define my custom cell MyCell, which extends Cell by adding extra data members: cell_colour
+BDM_SIM_OBJECT(MyCell, bdm::Cell) { // our object extends the Cell object
+  BDM_SIM_OBJECT_HEADER(MyCellExt, 1, cell_color_); // create the header with our new data member
+
+
+  public:
+    MyCellExt() {}
+    MyCellExt(const std::array<double, 3>& position) : Base(position) {} // our creator
+    // getter and setter for our new data member
+    void SetCellColor(int cellcolor) { cell_color_[kIdx] = cellcolor; }
+    int GetCellColor() { return cell_color_[kIdx]; }
+    int* GetCellColorPtr() { return cell_color_.data(); }
+
+
+  private:
+  // private data can only be accessed by public function and not directly
+    vec<int> cell_color_; // declare our new data member and define its type
+};
+```
+
+Then where the cell parameters are defined, the cell colour is set to all the cells using a number to define the number. (4 indicates blue)
+``` C++
+cell.SetCellColor(4);
+```
+
+Open Paraview with the export visualization like before. Click on MyCells on the left
+![Mycells image](seemapankhania/images/paraview1.png)
+
+Then in the properties bar, change the colouring to cell_color_ and this should make the cells appear blue!
+![cellcolour image](seemapankhania/images/paraview2.png)
+
+When you play the animation, the blue cells should randomly move:
+![seemapankhania/images/videoimage2.png](https://youtu.be/5mfzSBPZCtw)
+
+##Making the movement smoother
+
+when you view the animation in paraview, you will notice that the movement is jagged and not very smooth. To solve this, a code will needed to be added that allows the previous movement and direction to be saved, so that the next movement is dependent on this rather to move to a random point. 
+
+Underneath where the array for the how much the cell will move, removing the code line 
+‘cell->UpdatePosition(cell_movements); // update the cell mass location, ie move the cell’
+
+and add the code below, which adds movement to the current movement depending on the direction of the last movement. This is then saved so that the new current movement is updated to the last movement 
+``` C++
+array<double, 3> curr_movement = {0.5*last_movement[0]+0.02*cell_movements[0],0.5*last_movement[1]+0.02*cell_movements[1],0.5*last_movement[2]+0.02*cell_movements[2]};
+          cell->SavePositionUpdate(curr_movement);
+          cell->UpdatePosition(curr_movement);
+```
+![seemapankhania/images/videoimage3.png](https://youtu.be/301bRmQCdA4)
+
+The final code for the .h file: 
+``` C++
+#ifndef COMPILE_TEST_H_
+#define COMPILE_TEST_H_
+
+#include "biodynamo.h"
+namespace bdm {
+
+  // Define my custom cell MyCell, which extends Cell by adding extra data members: cell_colour
+BDM_SIM_OBJECT(MyCell, bdm::Cell) { // our object extends the Cell object
+  BDM_SIM_OBJECT_HEADER(MyCellExt, 1, cell_color_, prev_movement_); 
+// create the header with our new data member
+
+  public:
+    MyCellExt() {}
+    MyCellExt(const std::array<double, 3>& position) : Base(position) {} // our creator
+    // getter and setter for our new data member
+    void SetCellColor(int cellcolor) { cell_color_[kIdx] = cellcolor; }
+    int GetCellColor() { return cell_color_[kIdx]; }
+    int* GetCellColorPtr() { return cell_color_.data(); }
+
+    void SavePositionUpdate(std::array<double, 3> prev_movement) {prev_movement_[kIdx] = prev_movement; }
+    std::array<double,3> GetPositionUpdate() { return prev_movement_[kIdx]; }
+
+  private:
+  // private data can only be accessed by public function and not directly
+    vec<int> cell_color_; // declare our new data member and define its type
+    vec<std::array<double,3>> prev_movement_;
+};
+
+using namespace std;
+
+struct GrowthModule : public BaseBiologyModule {
+  GrowthModule() : BaseBiologyModule(gAllBmEvents) {}
+
+  template <typename T, typename TSimulation = Simulation<>>
+  void Run(T* cell) {
+    auto* random = TSimulation::GetActive()->GetRandom();
+
+
+          array<double, 3> cell_movements{random->Uniform(-20, 20), random->Uniform(-20, 20), random->Uniform(-20, 20)}; // create an array of 3 random numbers between -2 and 2
+
+
+          array<double, 3> last_movement = cell->GetPositionUpdate();
+          array<double, 3> curr_movement = {0.5*last_movement[0]+0.02*cell_movements[0],0.5*last_movement[1]+0.02*cell_movements[1],0.5*last_movement[2]+0.02*cell_movements[2]};
+          cell->SavePositionUpdate(curr_movement);
+          cell->UpdatePosition(curr_movement);
+
+
+          cell->SavePositionUpdate(cell_movements);
+          cell->SetPosition(cell->GetPosition()); // set the cell position
+          cell->SetCellcolour(cell->GetCellcolour());
+
+      } // end Run
+};
+
+// Define compile time parameter
+template <typename Backend>
+struct CompileTimeParam : public DefaultCompileTimeParam<Backend> {
+  using BiologyModules = Variant<GrowthModule>;  // add GrowthModule
+  using AtomicTypes = VariadicTypedef<MyCell>;   // use MyCell object
+};
+
+inline int Simulate(int argc, const char** argv) {
+  Simulation<> simulation(argc, argv);
+  auto* rm = simulation.GetResourceManager();
+  auto* param = simulation.GetParam();
+  auto* random = simulation.GetRandom();
+
+  #pragma omp parallel
+   simulation.GetRandom()->SetSeed(omp_get_thread_num()); //these 2 lines initialise the random number generator so that the cells have different thread values
+  size_t nb_of_cells = 10;  // number of cells in the simulation
+  double x_coord, y_coord, z_coord;
+
+  param->bound_space_ = true;
+  param->min_bound_ = 0;
+  param->max_bound_ = 100;  // cube of 100*100*100
+  // create a structure to contain cells
+  auto* cells = rm->template Get<MyCell>();
+  // allocate the correct number of cell in our cells structure before
+  cells->reserve(nb_of_cells);
+
+  for (size_t i = 0; i < nb_of_cells; ++i) {
+    // our modelling will be a cell cube of 100*100*100
+    // random double between 0 and 100
+    x_coord = random->Uniform(param->min_bound_, param->max_bound_);
+    y_coord = random->Uniform(param->min_bound_, param->max_bound_);
+    z_coord = random->Uniform(param->min_bound_, param->max_bound_);
+
+    // creating the cell at position x, y, z
+    MyCell cell({x_coord, y_coord, z_coord});
+    // set cell parameters
+    cell.SetDiameter(7);
+    cell.AddBiologyModule(GrowthModule());
+    cell.SetCellColor(4);
+    cell.SavePositionUpdate({0.0,0.0,0.0});
+
+
+    cells->push_back(cell);  // put the created cell in our cells structure
+  }
+  cells->Commit();
+  // Run simulation for one timestep
+  simulation.GetScheduler()->Simulate(300);
+
+  std::cout << "Simulation completed successfully!" << std::endl;
+  return 0;
+}
+
+}  // namespace bdm
+
+#endif  // COMPILE_TEST_H_
+```
+
+The final code for the .cc file: 
+``` C++
+#include "compile_test.h"
+
+int main(int argc, const char** argv) { return bdm::Simulate(argc, argv); }
+```
